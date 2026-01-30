@@ -6,6 +6,8 @@ export const decisionCopy = {
     "Nesse momento, voce se ve mais no caminho de aprender ou de ter acompanhamento?",
   sdrFollowup:
     "Perfeito.\nVou te enviar o link pra agendar uma conversa estrategica com nosso time.",
+  erupcaoFollowup:
+    "Perfeito.\nVou te enviar o link pra voce fazer o Raio-X e conhecer o Erupcao.",
   closerIntro:
     "Perfeito. Entao faz total sentido avancarmos.\n" +
     "A proxima etapa e um diagnostico estrategico do seu Instagram, onde um estrategista vai analisar seu perfil por completo e te mostrar, na pratica, os caminhos pra alcancar seus objetivos.\n" +

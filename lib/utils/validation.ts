@@ -24,6 +24,14 @@ export function isNo(text: string): boolean {
   return /(^|\\s)(nao|negativo|agora nao)(\\s|$)/i.test(text);
 }
 
+export function isLearnPath(text: string): boolean {
+  return /aprender|curso|aula|sozinho|sozinh[oa]|estudar/i.test(text);
+}
+
+export function isAccompanimentPath(text: string): boolean {
+  return /acompanhamento|mentoria|consultoria|ajuda|suporte|guiado/i.test(text);
+}
+
 export function safeText(value: unknown): string {
   if (typeof value !== "string") return "";
   return value.trim();

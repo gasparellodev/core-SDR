@@ -1,5 +1,10 @@
 import type { ConversationStep, ConversationData } from "@/types";
-import { isNo, isYes } from "@/lib/utils/validation";
+import {
+  isNo,
+  isYes,
+  isLearnPath,
+  isAccompanimentPath
+} from "@/lib/utils/validation";
 
 export type FlowStep = {
   step: ConversationStep;
@@ -36,7 +41,7 @@ export const flow: Record<ConversationStep, FlowStep> = {
     step: "confirmacao_perfil",
     question: ({ instagram }) =>
       `So confirmando: esse e o seu perfil do Instagram mesmo? ${instagram}`,
-    validate: (text) => text.trim().length > 0,
+    validate: (text) => isYes(text) || isNo(text) || text.trim().length > 0,
     next: "objetivo_principal"
   },
   objetivo_principal: {
@@ -66,7 +71,10 @@ export const flow: Record<ConversationStep, FlowStep> = {
       `${name}, antes de avancarmos, preciso ser bem direto.\n` +
       "O quanto faz sentido pra voce comecar de verdade um projeto serio no Instagram?\n" +
       "Isso e uma prioridade pra voce agora?",
-    validate: (text) => text.trim().length > 0,
+    validate: (text) => {
+      const lower = text.toLowerCase();
+      return isYes(lower) || isNo(lower) || lower.includes("muito");
+    },
     extract: (text, data) => {
       const lower = text.toLowerCase();
       const prioridade =
@@ -86,13 +94,31 @@ export const flow: Record<ConversationStep, FlowStep> = {
       "Hoje, voce estaria disposto(a) a investir financeiramente pra destravar esse projeto?\n" +
       "Trabalhamos com programas de acompanhamento e, em media, o investimento gira em torno de R$3.000 por mes.\n" +
       "Isso e algo que hoje estaria dentro da sua realidade?",
-    validate: (text) => text.trim().length > 0,
+    validate: (text) => isYes(text) || isNo(text),
     extract: (text, data) => ({
       ...data,
       capacidade_investimento: isYes(text)
         ? true
         : isNo(text)
           ? false
+          : undefined
+    }),
+    next: "caminho_pos_capacidade"
+  },
+  caminho_pos_capacidade: {
+    step: "caminho_pos_capacidade",
+    question: () =>
+      "Perfeito, obrigado pela sinceridade.\n" +
+      "Hoje temos caminhos diferentes por aqui:\n" +
+      "alguns sao pra quem quer aprender e aplicar sozinho, e outros pra quem quer acompanhamento mais proximo.\n" +
+      "Nesse momento, voce se ve mais no caminho de aprender ou de ter acompanhamento?",
+    validate: (text) => isLearnPath(text) || isAccompanimentPath(text),
+    extract: (text, data) => ({
+      ...data,
+      caminho_pos_capacidade: isLearnPath(text)
+        ? "aprender"
+        : isAccompanimentPath(text)
+          ? "acompanhamento"
           : undefined
     }),
     next: "decisao"

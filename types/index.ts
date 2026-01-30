@@ -13,6 +13,7 @@ export type ConversationStep =
   | "situacao_atual"
   | "prioridade_real"
   | "capacidade_investimento"
+  | "caminho_pos_capacidade"
   | "decisao";
 
 export type LeadPayload = {

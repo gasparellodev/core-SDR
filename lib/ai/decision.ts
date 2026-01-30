@@ -1,4 +1,5 @@
 import type { ConversationData } from "@/types";
+import { isAccompanimentPath, isLearnPath } from "@/lib/utils/validation";
 
 export type DecisionResult =
   | { type: "closer" }
@@ -67,10 +68,16 @@ export function decideNext(
   if (data.capacidade_investimento === true) return { type: "closer" };
 
   if (data.capacidade_investimento === false) {
-    if (/aprender|curso|aula/i.test(lastInboundText)) {
+    if (data.caminho_pos_capacidade === "aprender") {
       return { type: "erupcao" };
     }
-    if (/acompanhamento|mentoria|consultoria/i.test(lastInboundText)) {
+    if (data.caminho_pos_capacidade === "acompanhamento") {
+      return { type: "sdr" };
+    }
+    if (isLearnPath(lastInboundText)) {
+      return { type: "erupcao" };
+    }
+    if (isAccompanimentPath(lastInboundText)) {
       return { type: "sdr" };
     }
     return { type: "need_path" };

@@ -56,3 +56,14 @@ create table if not exists sdr_conversation_steps (
   content text,
   created_at timestamp with time zone default now()
 );
+
+create table if not exists sdr_message_queue (
+  id uuid primary key default gen_random_uuid(),
+  conversation_id uuid references sdr_conversations(id),
+  direction text not null,
+  content text not null,
+  step text not null,
+  status text not null default 'pending',
+  created_at timestamp with time zone default now(),
+  sent_at timestamp with time zone
+);

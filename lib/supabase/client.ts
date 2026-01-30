@@ -126,6 +126,50 @@ export async function insertConversationStep(params: {
   if (error) throw error;
 }
 
+export async function enqueueOutboundMessage(params: {
+  conversation_id: string;
+  content: string;
+  step: string;
+}): Promise<void> {
+  const client = getClient();
+  const { error } = await client.from("sdr_message_queue").insert({
+    conversation_id: params.conversation_id,
+    direction: "outbound",
+    content: params.content,
+    step: params.step,
+    status: "pending"
+  });
+  if (error) throw error;
+}
+
+export async function getPendingOutboundQueue(conversationId: string): Promise<
+  {
+    id: string;
+    content: string;
+    step: string;
+  }[]
+> {
+  const client = getClient();
+  const { data, error } = await client
+    .from("sdr_message_queue")
+    .select("id, content, step")
+    .eq("conversation_id", conversationId)
+    .eq("direction", "outbound")
+    .eq("status", "pending")
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as { id: string; content: string; step: string }[];
+}
+
+export async function markQueueSent(id: string): Promise<void> {
+  const client = getClient();
+  const { error } = await client
+    .from("sdr_message_queue")
+    .update({ status: "sent", sent_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
 export async function upsertQualificationData(params: {
   conversation_id: string;
   data: ConversationData;

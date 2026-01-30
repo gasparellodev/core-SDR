@@ -4,6 +4,7 @@ import { applyAnswer, setStatus } from "@/lib/conversation/state";
 import { decisionCopy, validationCopy } from "@/lib/ai/prompts";
 import { decideNext } from "@/lib/ai/decision";
 import { generateSdrReply } from "@/lib/ai/llm";
+import { isNo } from "@/lib/utils/validation";
 
 export type AgentResult = {
   reply: string;
@@ -16,6 +17,14 @@ export async function processInboundMessage(
   state: ConversationState,
   inbound: InboundMessage
 ): Promise<AgentResult> {
+  if (state.current_step === "abertura" && isNo(inbound.text)) {
+    return {
+      reply:
+        "Sem problemas. Se fizer sentido em outro momento, posso te ajudar por aqui.",
+      nextState: setStatus(state, "completed"),
+      completed: true
+    };
+  }
   if (state.current_step === "decisao") {
     const decision = decideNext(state.conversation_data, inbound.text);
     if (decision.type === "need_path") {
@@ -65,6 +74,52 @@ export async function processInboundMessage(
     };
   }
 
+  if (state.current_step === "capacidade_investimento") {
+    if (nextState.conversation_data.capacidade_investimento === true) {
+      return {
+        reply: decisionCopy.closerIntro,
+        nextState: setStatus(
+          { ...nextState, current_step: "decisao" },
+          "qualified_closer"
+        ),
+        completed: true,
+        decision: "closer"
+      };
+    }
+    if (nextState.conversation_data.capacidade_investimento === false) {
+      return {
+        reply: decisionCopy.noInvestmentAskPath,
+        nextState,
+        completed: false
+      };
+    }
+  }
+
+  if (state.current_step === "caminho_pos_capacidade") {
+    if (nextState.conversation_data.caminho_pos_capacidade === "aprender") {
+      return {
+        reply: decisionCopy.erupcaoFollowup,
+        nextState: setStatus(
+          { ...nextState, current_step: "decisao" },
+          "qualified_erupcao"
+        ),
+        completed: true,
+        decision: "erupcao"
+      };
+    }
+    if (nextState.conversation_data.caminho_pos_capacidade === "acompanhamento") {
+      return {
+        reply: decisionCopy.sdrFollowup,
+        nextState: setStatus(
+          { ...nextState, current_step: "decisao" },
+          "qualified_sdr"
+        ),
+        completed: true,
+        decision: "sdr"
+      };
+    }
+  }
+
   const nextStep = flow[nextState.current_step];
   const nextQuestion = nextStep.question({
     name: nextState.lead_name,
@@ -108,20 +163,6 @@ export async function processInboundMessage(
       `Legal, ${nextState.lead_name}.\n` +
       "Essa conversa e importante justamente pra mapear pontos estrategicos que podem ajudar seu perfil a destravar crescimento.\n" +
       nextQuestion;
-  }
-
-  if (state.current_step === "capacidade_investimento") {
-    if (nextState.conversation_data.capacidade_investimento === false) {
-      reply = decisionCopy.noInvestmentAskPath;
-    } else if (nextState.conversation_data.capacidade_investimento === true) {
-      reply = decisionCopy.closerIntro;
-      return {
-        reply,
-        nextState: setStatus(nextState, "qualified_closer"),
-        completed: true,
-        decision: "closer"
-      };
-    }
   }
 
   return {

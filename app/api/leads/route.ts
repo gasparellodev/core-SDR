@@ -5,10 +5,14 @@ import {
   getConversationByWhatsapp,
   insertMessage,
   insertConversationStep,
-  upsertLeadRecord
+  upsertLeadRecord,
+  enqueueOutboundMessage,
+  getPendingOutboundQueue,
+  markQueueSent
 } from "@/lib/supabase/client";
 import { flow } from "@/lib/conversation/flow";
 import { sendMessage } from "@/lib/evolution/client";
+import { splitIntoChunks } from "@/lib/utils/chunking";
 
 export async function POST(request: Request) {
   try {
@@ -53,19 +57,32 @@ export async function POST(request: Request) {
       status: "active"
     });
 
-    await sendMessage(whatsapp, initialQuestion);
-    await insertMessage({
-      conversation_id: conversation.id,
-      direction: "outbound",
-      content: initialQuestion,
-      step: "abertura"
-    });
-    await insertConversationStep({
-      conversation_id: conversation.id,
-      step: "abertura",
-      direction: "outbound",
-      content: initialQuestion
-    });
+    const chunks = splitIntoChunks(initialQuestion, 3);
+    for (const content of chunks) {
+      await enqueueOutboundMessage({
+        conversation_id: conversation.id,
+        content,
+        step: "abertura"
+      });
+    }
+
+    const pending = await getPendingOutboundQueue(conversation.id);
+    for (const item of pending) {
+      await sendMessage(whatsapp, item.content);
+      await insertMessage({
+        conversation_id: conversation.id,
+        direction: "outbound",
+        content: item.content,
+        step: item.step
+      });
+      await insertConversationStep({
+        conversation_id: conversation.id,
+        step: item.step,
+        direction: "outbound",
+        content: item.content
+      });
+      await markQueueSent(item.id);
+    }
 
     return NextResponse.json({ status: "created", id: conversation.id });
   } catch (error) {

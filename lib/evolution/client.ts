@@ -1,8 +1,8 @@
 import type { EvolutionSendMessageResponse } from "@/lib/evolution/types";
 
-const baseUrl = process.env.EVOLUTION_API_URL;
+const baseUrl = process.env.EVOLUTION_API_URL?.replace(/\/+$/, "");
 const apiKey = process.env.EVOLUTION_API_KEY;
-const instanceName = process.env.EVOLUTION_INSTANCE_NAME;
+const instanceName = process.env.EVOLUTION_INSTANCE_NAME?.trim();
 
 export function getEvolutionConfig() {
   if (!baseUrl || !apiKey || !instanceName) {
